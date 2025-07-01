@@ -12,24 +12,6 @@ local ZukLogger = {
     debugMode = false
 }
 
-function ZukLogger:SetLevel(level)
-    if self.levels[level] then
-        self.currentLevel = level
-        self:Info("Log level set to " .. level)
-    else
-        self:Error("Invalid log level: " .. tostring(level))
-    end
-end
-
-function ZukLogger:SetDebugMode(enabled)
-    self.debugMode = enabled
-    if enabled then
-        self:SetLevel("DEBUG")
-    else
-        self:SetLevel("INFO")
-    end
-    self:Info("Debug mode " .. (enabled and "enabled" or "disabled"))
-end
 
 function ZukLogger:FormatMessage(level, message)
     local timestamp = ""
@@ -70,9 +52,5 @@ function ZukLogger:Error(message)
     API.Log(formattedMessage, "error")
 end
 
-function ZukLogger:Clear()
-    API.ClearLog()
-    self:Info("Log cleared")
-end
 
 return ZukLogger

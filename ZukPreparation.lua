@@ -42,15 +42,6 @@ local State = {
 
     isPortalUsed = false,
 
-    canAttack = false,
-
-    isSetupFirstInstance = false,
-
-    playerPosition = nil,
-
-    centerOfArenaPosition = nil,
-
-    startLocationOfArena = nil
 
 }
 
@@ -75,6 +66,8 @@ end
 
 
 local zukPreparation = {}
+
+
 
 zukPreparation.summoningPouches = {
     "Blood nihil pouch", "Ice nihil pouch", "Shadow nihil pouch", "Smoke nihil pouch",
@@ -109,20 +102,6 @@ zukPreparation.emergencyDrinkItems = {
 }
 
 zukPreparation.totalDeaths = 0
-
-function zukPreparation:HasNpcNearbyById(npc_id, distance)
-    -- O tipo de objeto '1' é para NPCs (do arquivo api.lua)
-    local npcs_found = API.GetAllObjArray1({npc_id}, distance, {1})
-
-
-    if npcs_found and #npcs_found > 0 then
-        API.Log(string.format("NPC com ID %d encontrado a até %d tiles de distância.", npc_id, distance), "info")
-        API.logInfo("NPC com ID  proximo '" .. tostring(npc_id) .. "' encontrado. Coordenadas: X=" .. tostring(npcs_found.x) .. ", Y=" .. tostring(npcs_found.y) .. ", Z=" .. tostring(npcs_found.z))
-        return true
-    else
-        return false
-    end
-end
 
 function zukPreparation:WhichFamiliar()
     local familiar = ""
@@ -324,17 +303,7 @@ function zukPreparation:GoThroughPortal()
 
 
     local random_y_offset = math.random(30, 35)
-    MoveYPositive(random_y_offset) -- Mantém a distância fixa, pois a randomização já está sendo aplicada no sleep.
-
-    -- Se quiser randomizar a distância, o math.random(min,max) ainda é a forma.
-
-
-
-    -- Aqui, a verificação do colosseum é feita após o movimento, o que pode estar incorreto
-
-    -- se o movimento for para dentro do colosseum e a verificação for imediata.
-
-    -- Considere se esta verificação é necessária imediatamente após o GoThroughPortal e MoveYPositive.
+    MoveYPositive(random_y_offset)
 
     local colosseum = API.GetAllObjArray1({COLOSSEUM_ENTRANCE_ID}, 30, {12})
 
@@ -352,10 +321,6 @@ local function getBuff(buffId)
     local buff = API.Buffbar_GetIDstatus(buffId, false)
     return { found = buff.found, remaining = (buff.found and API.Bbar_ConvToSeconds(buff)) or 0 }
 end
-local Bonfire = getBuff(10931)
-
-
-
 
 function zukPreparation:FullPreparationCycle()
 
@@ -505,8 +470,7 @@ function zukPreparation:VerificarNpcDeath()
     end
 end
 
-function zukPreparation:HandleDeathNPC() -- Use 'self' ou o nome da tabela (zukPreparation) para métodos
-    -- Procura o NPC da Morte (tipo 1, a uma distância de até 20 tiles)
+function zukPreparation:HandleDeathNPC()
     if State.isPlayerDead then
         zukPreparation:ReclaimItemsAtGrave()  -- Chama a função de resgate de itens que já deve estar aqui
             API.RandomSleep2(1000, 500, 200) -- Pequeno sleep após a ação
@@ -529,8 +493,5 @@ function zukPreparation:HandleDeathNPC() -- Use 'self' ou o nome da tabela (zukP
         end
 
 end
-
-
-
 
 return zukPreparation
