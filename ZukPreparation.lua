@@ -172,6 +172,11 @@ function zukPreparation:IsCombatStartInterfacePresent()
 
 end
 
+function zukPreparation:SleepTickRandom(sleepticks)
+    API.Sleep_tick(sleepticks)
+    API.RandomSleep2(1, 120, 0)
+end
+
 function zukPreparation:WarsTeleport()
     API.DoAction_Ability("War's Retreat", 1, API.OFF_ACT_GeneralInterface_route, false)
     self:SleepTickRandom(10)
