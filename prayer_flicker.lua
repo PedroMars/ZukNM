@@ -323,11 +323,13 @@ function PrayerFlicker:_updateActions()
 
   -- Remove expired actions
   table.sort(toRemove, function(a, b)
-  return a.index < b.index
+    return a.index > b.index -- A única mudança é de '<' para '>'
   end)
+
+  -- Agora, ao remover os itens, os índices anteriores permanecem válidos
   for _, record in ipairs(toRemove) do
-  Utils:log("Removing expired action: " .. (record.action.threat.name or "Unnamed"), "debug") -- DEBUG
-  table.remove(self.pendingActions, record.index)
+    Utils:log("Removing expired action: " .. (record.action.threat.name or "Unnamed"), "debug") -- DEBUG
+    table.remove(self.pendingActions, record.index)
   end
 
   Utils:log("Pending actions after update: " .. #self.pendingActions, "debug") -- DEBUG

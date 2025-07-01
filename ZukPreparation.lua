@@ -2,11 +2,7 @@ local API = require("api")
 
 local Logger = require("zukME-main.ZukLogger")
 
-local Utils = require("kerapac/KerapacUtils")
-
-local Data = require("zukME-main.KerapacData")
-
-local AURAS = require("core.auras")
+local auras = require("auras")
 
 
 local ALTAR_OF_WAR_ID = 114748
@@ -26,6 +22,8 @@ local COMBAT_START_INTERFACE_ID = 1671
 local COMBAT_INITIATOR_NPC_ID = 28525
 
 local npcdeath = false
+
+
 
 
 
@@ -78,6 +76,40 @@ end
 
 local zukPreparation = {}
 
+zukPreparation.summoningPouches = {
+    "Blood nihil pouch", "Ice nihil pouch", "Shadow nihil pouch", "Smoke nihil pouch",
+    "Binding contract (ripper demon)", "Binding contract (kal'gerion demon)",
+    "Binding contract (blood reaver)", "Binding contract (hellhound)", "Holy scarab pouch"
+}
+
+zukPreparation.foodItems = {
+    "Lobster", "Swordfish", "Desert sole", "Catfish", "Monkfish", "Beltfish",
+    "Ghostly sole", "Cooked eeligator", "Shark", "Sea turtle", "Great white shark",
+    "Cavefish", "Manta ray", "Rocktail", "Tiger shark", "Sailfish",
+    "Potato with cheese", "Tuna potato", "Baron shark", "Juju gumbo",
+    "Great maki", "Great gunkan", "Rocktail soup", "Sailfish soup",
+    "Fury shark", "Primal feast"
+}
+
+zukPreparation.emergencyFoodItems = {
+    "Green blubber jellyfish", "Blue blubber jellyfish",
+    "2/3 green blubber jellyfish", "2/3 blue blubber jellyfish",
+    "1/3 green blubber jellyfish", "1/3 blue blubber jellyfish",
+}
+
+zukPreparation.emergencyDrinkItems = {
+    "Guthix rest (4)", "Guthix rest (3)", "Guthix rest (2)", "Guthix rest (1)",
+    "Guthix rest flask (6)", "Guthix rest flask (5)", "Guthix rest flask (4)", "Guthix rest flask (3)", "Guthix rest flask (2)", "Guthix rest flask (1)",
+    "Saradomin brew (4)", "Saradomin brew (3)", "Saradomin brew (2)", "Saradomin brew (1)",
+    "Saradomin brew flask (6)", "Saradomin brew flask (5)", "Saradomin brew flask (4)", "Saradomin brew flask (3)", "Saradomin brew flask (2)", "Saradomin brew flask (1)",
+    "Super Guthix rest (4)", "Super Guthix rest (3)", "Super Guthix rest (2)", "Super Guthix rest (1)",
+    "Super Guthix rest flask (6)", "Super Guthix rest flask (5)", "Super Guthix rest flask (4)", "Super Guthix rest flask (3)", "Super Guthix rest flask (2)", "Super Guthix rest flask (1)",
+    "Super Saradomin brew (4)", "Super Saradomin brew (3)", "Super Saradomin brew (2)", "Super Saradomin brew (1)",
+    "Super Saradomin brew flask (6)", "Super Saradomin brew flask (5)", "Super Saradomin brew flask (4)", "Super Saradomin brew flask (3)", "Super Saradomin brew flask (2)", "Super Saradomin brew flask (1)"
+}
+
+zukPreparation.totalDeaths = 0
+
 function zukPreparation:HasNpcNearbyById(npc_id, distance)
     -- O tipo de objeto '1' é para NPCs (do arquivo api.lua)
     local npcs_found = API.GetAllObjArray1({npc_id}, distance, {1})
@@ -95,10 +127,10 @@ end
 function zukPreparation:WhichFamiliar()
     local familiar = ""
     local foundFamiliar = false
-    for i = 1, #Data.summoningPouches do
-        foundFamiliar = Inventory:Contains(Data.summoningPouches[i])
+    for i = 1, #zukPreparation.summoningPouches do
+        foundFamiliar = Inventory:Contains(zukPreparation.summoningPouches[i])
         if foundFamiliar then
-            familiar = Data.summoningPouches[i]
+            familiar = zukPreparation.summoningPouches[i]
             break
         end
     end
@@ -106,7 +138,7 @@ function zukPreparation:WhichFamiliar()
 end
 
 function zukPreparation:SummonFamiliar()
-    if not Familiars:HasFamiliar() and Inventory:ContainsAny(Data.summoningPouches) then
+    if not Familiars:HasFamiliar() and Inventory:ContainsAny(zukPreparation.summoningPouches) then
         Logger:Info("Summoning familiar " .. self:WhichFamiliar())
         Inventory:DoAction(self:WhichFamiliar(), 1, API.OFF_ACT_GeneralInterface_route)
         State.isFamiliarSummoned = true
@@ -161,6 +193,11 @@ function zukPreparation:IsCombatStartInterfacePresent()
 
 end
 
+function zukPreparation:WarsTeleport()
+    API.DoAction_Ability("War's Retreat", 1, API.OFF_ACT_GeneralInterface_route, false)
+    self:SleepTickRandom(10)
+    Logger:Info("Teleported to War's Retreat")
+end
 
 
 function zukPreparation:CheckStartLocation()
@@ -169,7 +206,7 @@ function zukPreparation:CheckStartLocation()
 
         Logger:Info("Teleporting to War's Retreat")
 
-        Utils:WarsTeleport()
+        zukPreparation:WarsTeleport()
 
         API.RandomSleep()
 
@@ -218,7 +255,6 @@ function zukPreparation:HandleBanking()
 end
 
 
-
 function zukPreparation:HandleAdrenalineCrystal()
 
     while not State.isMaxAdrenaline and API.Read_LoopyLoop() do
@@ -258,12 +294,13 @@ local function MoveYPositive(distance)
     local targetPosition = FFPOINT.new(currentPosition.x + random_x_offset, currentPosition.y + distance, currentPosition.z)
 
 
-
     Logger:Info(string.format("Moving player %d fields in positive Y direction to (%d, %d)", distance, targetPosition.x, targetPosition.y))
 
     API.DoAction_TileF(targetPosition)
 
-    API.WaitUntilMovingEnds(20, 4) -- Espera o movimento terminar
+    if API.DoAction_Ability_check("Surge", 1, API.OFF_ACT_GeneralInterface_route, true, true, true) then     Logger:Info("Movement complete.")  end
+    API.DoAction_TileF(targetPosition)
+    API.WaitUntilMovingEnds(3, 10) -- Espera o movimento terminar
 
     Logger:Info("Movement complete.")
 
@@ -340,6 +377,11 @@ function zukPreparation:FullPreparationCycle()
     else
         return false
     end
+
+    if not auras:isAuraActive() then
+        auras:activateAura("equilibrium")
+    end
+
         self:HandlePrayerRestore()
         API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
         self:SummonFamiliar()
@@ -349,13 +391,13 @@ function zukPreparation:FullPreparationCycle()
         self:GoThroughPortal()
         API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
         API.DoAction_NPC(0x29, API.OFF_ACT_InteractNPC_route2, { COMBAT_INITIATOR_NPC_ID }, 50)
-        API.RandomSleep2(800, 1500, 2500) -- Pequena pausa para a interface aparecer, agora mais randomizada
+        API.WaitUntilMovingEnds(10, 20) -- Espera o movimento terminar
 
 
 
         if self:IsDialogInterfacePresent() then
 
-            Logger:Info("Dialog interface is present. Clicking 'No' option.")
+            Logger:Info("Dialog interface is present. Clicking 'Yes' option.")
 
             local success, err = pcall(function()
 
@@ -366,7 +408,7 @@ function zukPreparation:FullPreparationCycle()
 
             if not success then
 
-                Logger:Error("Error clicking 'No' option: " .. tostring(err))
+                Logger:Error("Error clicking 'Yes' option: " .. tostring(err))
 
             end
 
@@ -374,7 +416,7 @@ function zukPreparation:FullPreparationCycle()
 
         else
 
-            Logger:Debug("Dialog interface not present. Skipping 'No' click.")
+            Logger:Debug("Dialog interface not present. Skipping 'Yes' click.")
 
         end
 
@@ -429,10 +471,12 @@ function zukPreparation:CheckPlayerDeath()
     zukPreparation:VerificarNpcDeath()
     if API.GetHP_() <= 0 and not State.isPlayerDead or npcdeath == true and not State.isPlayerDead then
         State.isPlayerDead = true
-        Data.totalDeaths = Data.totalDeaths + 1
+        zukPreparation.totalDeaths = zukPreparation.totalDeaths + 1
         Logger:Warn("Player died!")
         zukPreparation:HandleDeathNPC()
         return true
+    else
+        return false
     end
 end
 
@@ -473,6 +517,7 @@ function zukPreparation:HandleDeathNPC() -- Use 'self' ou o nome da tabela (zukP
                     zukPreparation:FullPreparationCycle()
                     return true
                 else
+                    API.Write_LoopyLoop(false)
                     return false
                 end
             end
