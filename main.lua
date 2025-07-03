@@ -1007,11 +1007,6 @@ local function stunRotation()
   end
 
 
-  if not specAttackOnCooldown() and not targetStunnedOrBound() then
-    if main:useAbility("Weapon Special Attack") then return end
-  end
-
-
   if main:useAbility("Touch of Death") then return end
 
 
