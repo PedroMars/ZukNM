@@ -808,16 +808,12 @@ if hp < math.random(4000, 6000) then
     end
   end
 
-  if not necroPrayer.found or necroPrayer2.found and prayer > 50 then
+  if not necroPrayer.found and not necroPrayer2.found and prayer > 50 then
     if API.DoAction_Ability(NECRO_PRAYER_NAME, 1, API.OFF_ACT_GeneralInterface_route, true) then
       API.RandomSleep2(300, 200, 200)
-      if not necroPrayer.found then
-        if API.DoAction_Ability("Sorrow", 1, API.OFF_ACT_GeneralInterface_route, true) then
-          API.RandomSleep2(300, 200, 200)
-        end
       end
     end
-  end
+
 
   if USE_BOOK and not book.found then
     if API.DoAction_Ability(BOOK_NAME, 1, API.OFF_ACT_GeneralInterface_route, true) then
@@ -1057,11 +1053,11 @@ local function thresholdRotation()
     if main:useAbility("Invoke Death") then return end
   end
 
-  if main:useAbility("Touch of Death") then return end
 
   if necrosisStacks() >= 6 then
     if main:useAbility("Finger of Death") then return end
   end
+
 
   if not targetBloated() then
     if main:useAbility("Bloat") then return end
@@ -1070,6 +1066,10 @@ local function thresholdRotation()
   if necrosisStacks() >= 4 and not targetBloated() then
     if main:useAbility("Finger of Death") then return end
   end
+
+
+  if main:useAbility("Touch of Death") then return end
+
 
   if FIGHT_STATE.targetInfo.Hitpoints > 20000 and
           not targetBloated() then
@@ -1758,7 +1758,8 @@ local prayerFlicker = PrayerFlicker.new(PRAYER_CONFIG)
 API.SetMaxIdleTime(9)
 
 tracking(killCount, API.ScriptRuntimeString(), playerDeaths)
-zukPreparation:FullPreparationCycle()
+
+zukPreparation:FullPreparationCycle() --- Para primeira kill comenta essa linha  / For first kill comment this line
 SAFESPOT_JAD = nil
 
 

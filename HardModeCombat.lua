@@ -25,6 +25,7 @@ BOOK_BUFF_ID = Setup.BOOK_BUFF_ID
 RESTORE_NAME = type(Setup.RESTORE_NAME) == "string" and Setup.RESTORE_NAME or ""
 FOOD_NAME = type(Setup.FOOD_NAME) == "string" and Setup.FOOD_NAME or ""
 FOOD_POT_NAME = type(Setup.FOOD_POT_NAME) == "string" and Setup.FOOD_POT_NAME or ""
+FOOD_EMERGENCY = type(Setup.FOODEmergency_NAMEHard) == "string" and Setup.FOOD_POT_NAME or ""
 ADREN_POT_NAME = type(Setup.ADREN_POT_NAME) == "string" and Setup.ADREN_POT_NAME or ""
 RING_SWITCH = type(Setup.RING_SWITCH) == "string" and Setup.RING_SWITCH or ""
 tentativas = 0
@@ -863,7 +864,7 @@ function main:evade_lavaskill()
 
     --- @type AllObject[]
 
-    local lava = API.GetAllObjArray1({ 7593 }, 3, { 4 })
+    local lava = API.GetAllObjArray1({ 7593 }, 5, { 4 })
 
     if #lava == 0 then
 
@@ -888,7 +889,7 @@ function main:evade_lavaskill()
 
     end
 
-    local safeTiles = API.Math_FreeTiles(lavaCoords, 4, 3, blockedCoords, true)
+    local safeTiles = API.Math_FreeTiles(lavaCoords, 4, 4, blockedCoords, true)
 
     if #safeTiles == 0 then
 
@@ -985,6 +986,12 @@ local function manageBuffs()
         if API.DoAction_Ability_check("Saradomin brew", 1, API.OFF_ACT_GeneralInterface_route, true, true, false) then
             API.RandomSleep2(200, 10, 10)
             API.DoAction_Ability_check("Saradomin brew", 1, API.OFF_ACT_GeneralInterface_route, true, true, false)
+            API.RandomSleep2(500, 10, 10)
+        end
+    end
+
+    if hp < math.random(3000, 3500) then
+        if Inventory:Eat(42254) then
             API.RandomSleep2(500, 10, 10)
         end
     end
