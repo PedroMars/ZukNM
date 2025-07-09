@@ -450,7 +450,7 @@ local function goToSafespot(safespot)
   end
   if API.DoAction_Tile(safespot) then
     API.RandomSleep2(300, 200, 200)
-    if API.Dist_FLPW(safespot) > 7 then
+    if API.Dist_FLPW(safespot) > 9 then
       if API.DoAction_Dive_Tile(safespot) then
         API.RandomSleep2(300, 200, 200)
       else if API.DoAction_Ability_check("Surge", 1, API.OFF_ACT_GeneralInterface_route, true, true, true) then
@@ -705,7 +705,7 @@ function main:useAbility(abilityName)
       end
       API.RandomSleep2(5, 0, 0)
     end
-    if not successful then
+    if not successful and habilitcast < 3 then
       API.logDebug("Failed to cast ability " .. abilityName .. ", recasting")
       return main:useAbility(abilityName)
     end
@@ -730,7 +730,7 @@ end
 
 local function manageBuffs()
   if not TIMER:shouldRun(TIMERS.Buffs.name) then return end
-
+  zukPreparation:CheckPlayerDeath()
   local prayer = API.GetPray_()
   local hp = API.GetHP_()
   local hppet = Familiars:GetHealth()
@@ -748,6 +748,8 @@ local function manageBuffs()
       API.DoAction_Interface(0xffffffff,0xffffffff,1,662,117,-1,API.OFF_ACT_GeneralInterface_route)
     end
   end
+
+
 
   if boneShield.action == "Activate" then
     if main:useAbility("Greater Bone Shield") then
@@ -773,7 +775,7 @@ local function manageBuffs()
     end
   end
 
-if hp < math.random(4000, 6000) then
+  if hp < math.random(4000, 6000) then
     if API.DoAction_Ability_check(FOOD_NAME, 1, API.OFF_ACT_GeneralInterface_route, true, true, false) then
       API.RandomSleep2(60, 10, 10)
       API.DoAction_Ability_check(FOOD_POT_NAME, 1, API.OFF_ACT_GeneralInterface_route, true, true, false)
@@ -790,7 +792,7 @@ if hp < math.random(4000, 6000) then
     end
   end
 
-  if prayer < math.random(200, 400) or API.GetSkillsTableSkill(6) < 99 then
+  if prayer < math.random(200, 400)  then
     if API.DoAction_Inventory3(RESTORE_NAME, 0, 1, API.OFF_ACT_GeneralInterface_route) then
       API.RandomSleep2(300, 200, 200)
     end
@@ -811,8 +813,8 @@ if hp < math.random(4000, 6000) then
   if not necroPrayer.found and not necroPrayer2.found and prayer > 50 then
     if API.DoAction_Ability(NECRO_PRAYER_NAME, 1, API.OFF_ACT_GeneralInterface_route, true) then
       API.RandomSleep2(300, 200, 200)
-      end
     end
+  end
 
 
   if USE_BOOK and not book.found then
@@ -1436,7 +1438,7 @@ local PRAYER_CONFIG = {
       prayer = PrayerFlicker.CURSES.DEFLECT_MELEE,
       condition = function()
         return areTargetsAlivePerto({ POSSIBLE_TARGETS.Hur, POSSIBLE_TARGETS.Igneous_Hur,
-                                 POSSIBLE_TARGETS.Kih, POSSIBLE_TARGETS.Mejkot, POSSIBLE_TARGETS.Unbreakable })
+                                      POSSIBLE_TARGETS.Kih, POSSIBLE_TARGETS.Mejkot, POSSIBLE_TARGETS.Unbreakable })
       end,
       priority = 1,
       duration = 1,
@@ -1470,7 +1472,7 @@ local PRAYER_CONFIG = {
       prayer = PrayerFlicker.CURSES.DEFLECT_RANGED,
       condition = function()
         return areTargetsAlivePerto({ POSSIBLE_TARGETS.Xil, POSSIBLE_TARGETS.Tok_Xil,
-                                 POSSIBLE_TARGETS.Igneous_Xil })
+                                      POSSIBLE_TARGETS.Igneous_Xil })
       end,
       priority = 5,
       duration = 1,
@@ -1696,6 +1698,7 @@ end
 
 local function updateFightState()
   local currWave = getCurrentWave()
+  zukPreparation:CheckPlayerDeath()
   if FIGHT_STATE.wave ~= currWave then
     onWaveChange(currWave)
     API.logWarn("Estamos na wave " .. currWave)
@@ -1737,9 +1740,33 @@ local function tracking(currentKills, currentRuntimeString, currentDeaths)
   API.DrawTable(metrics)
 end
 
+
+
 local NPC_ALVO_ID = 28536 -- Exemplo de ID do NPC
 local DISTANCIA_PERIGO = 2 -- Distância para considerar o NPC perigoso
 
+-- CÓDIGO PARA COLOCAR NO INÍCIO DO SCRIPT (executa uma vez)
+
+-- 1. Define a base de tempo e a variação aleatória
+local baseHours = 15
+local randomMinutes = math.random(-50, 50) -- Sorteia um valor entre -50 e +50 minutos
+
+-- 2. Calcula a duração final em segundos, já incluindo a parte aleatória
+local shutdownDurationInSeconds = (baseHours * 3600) + (randomMinutes * 60)
+
+-- 3. Guarda o momento exato em que o script começou
+local scriptStartTime = os.time()
+
+-- (Opcional, mas recomendado) Log para você saber qual foi o tempo sorteado
+API.logWarn(string.format("Desligamento automático agendado para aproximadamente %d horas e %d minutos.", baseHours, randomMinutes))
+
+local function checkShutdownTimer_Efficient()
+  -- Compara o tempo atual com o tempo inicial
+  if (os.time() - scriptStartTime) >= shutdownDurationInSeconds then
+    API.logWarn("TEMPO LIMITE ATINGIDO. Desligando o script de forma segura.")
+    API.Write_LoopyLoop(false)
+  end
+end
 
 
 
@@ -1767,10 +1794,18 @@ checkCoord()
 if zukPreparation:CheckPlayerDeath() then
   playerDeaths = playerDeaths +1
 end
-goToSafespot(SAFESPOT_JAD)
+while not IsPlayerAtWPoint(SAFESPOT_JAD,0) and tentativas<6 and wave~=18  do
+  goToSafespot(SAFESPOT_JAD)
+  API.WaitUntilMovingEnds(1, 3)
+  tentativas = tentativas + 1
+  API.logWarn("[SEAR] Moving to safe point")
+  API.logWarn("Valor atual da variável tentativas: " .. tentativas, "info")
+  zukPreparation:CheckPlayerDeath()
+end
 updateFightState()
 
 while API.Read_LoopyLoop() do
+  checkShutdownTimer_Efficient()
 
 
   tracking(killCount, API.ScriptRuntimeString(), playerDeaths)
@@ -1869,6 +1904,7 @@ while API.Read_LoopyLoop() do
       elseif searDebuff.remaining < 15 and not API.ReadPlayerMovin2() then
         if API.DoAction_TileF(FFPOINT.new(zuk.Tile_XYZ.x, zuk.Tile_XYZ.y + (searDebuff.remaining / 2), 0)) then
           API.logWarn("[SEAR] Moving to remove sear debuff")
+          zukPreparation:CheckPlayerDeath()
           API.Sleep_tick(1)
         end
       end
@@ -1876,6 +1912,7 @@ while API.Read_LoopyLoop() do
     elseif avoidQuakeTile ~= nil then
       if API.DoAction_Ability_check("Surge", 1, API.OFF_ACT_GeneralInterface_route, true, true, true) then
         API.logWarn("[QUAKE] Surged away from quake spot " .. avoidQuakeTile.x .. ", " .. avoidQuakeTile.y)
+        zukPreparation:CheckPlayerDeath()
       else
         if API.DoAction_TileF(avoidQuakeTile) then
           API.logWarn("[QUAKE] Moving away from quake tile")
@@ -1894,9 +1931,12 @@ while API.Read_LoopyLoop() do
   manageBuffs()
   prayerFlicker:update()
   attackZukIfPresent()
+  if not Inventory:Contains(42267) then
+    zukPreparation:FullPreparationCycle()
+    API.logWarn("To sem comida, vou economizar indo base")
+  end
 
 
   ::continue::
   API.RandomSleep2(30, 10, 0)
 end
-

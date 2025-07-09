@@ -216,7 +216,9 @@ function zukPreparation:HandlePrayerRestore()
 
         API.DoAction_Object1(0x3d, API.OFF_ACT_GeneralObject_route0, { ALTAR_OF_WAR_ID }, 50)
 
-        API.WaitUntilMovingEnds(10, 4)
+        while API.GetPrayPrecent() < 90 do
+            API.RandomSleep2(500, 500, 500)
+        end
 
     end
 
@@ -230,7 +232,10 @@ function zukPreparation:HandleBanking()
 
     API.DoAction_Object1(0x33, API.OFF_ACT_GeneralObject_route3, { BANK_CHEST_ID }, 50)
 
-    API.WaitUntilMovingEnds(10, 4)
+    while not Inventory:Contains(15332) do
+        zukPreparation:HandleDeathNPC()
+        API.RandomSleep2(1200, 700, 800)
+    end
 
     Logger:Info("Loading preset")
 
@@ -242,6 +247,7 @@ end
 function zukPreparation:HandleAdrenalineCrystal()
 
     while not State.isMaxAdrenaline and API.Read_LoopyLoop() do
+        zukPreparation:HandleDeathNPC()
 
         if API.GetAddreline_() ~= 100 then
 
@@ -249,7 +255,11 @@ function zukPreparation:HandleAdrenalineCrystal()
 
             Interact:Object("Adrenaline crystal", "Channel", 60)
 
-            API.WaitUntilMovingandAnimEnds(10, 4)
+            API.RandomSleep2(2000,500,500)
+
+            while API.ReadPlayerMovin() do
+                API.RandomSleep2(500, 500, 500)
+            end
 
             API.RandomSleep() -- Substituído de Utils:SleepTickRandom(1)
 
@@ -267,58 +277,36 @@ function zukPreparation:HandleAdrenalineCrystal()
 
 end
 
-
-
-local function MoveYPositive(distance)
-
-    local random_x_offset = math.random(-5, 5)
-
-    local currentPosition = API.PlayerCoord()
-
-    local targetPosition = FFPOINT.new(currentPosition.x + random_x_offset, currentPosition.y + distance, currentPosition.z)
-
-
-    Logger:Info(string.format("Moving player %d fields in positive Y direction to (%d, %d)", distance, targetPosition.x, targetPosition.y))
-
-    API.DoAction_TileF(targetPosition)
-
-    if API.DoAction_Ability_check("Surge", 1, API.OFF_ACT_GeneralInterface_route, true, true, true) then     Logger:Info("Movement complete.")  end
-    API.DoAction_TileF(targetPosition)
-    API.WaitUntilMovingEnds(3, 10) -- Espera o movimento terminar
-
-    Logger:Info("Movement complete.")
-
-end
-
-
-
-
-
 function zukPreparation:GoThroughPortal()
 
     Logger:Info("Going through boss portal")
 
-    API.DoAction_Object1(0x39, API.OFF_ACT_GeneralObject_route0, { BOSS_PORTAL_ID }, 50)
-
-    API.WaitUntilMovingEnds(20, 4)
-
-    API.RandomSleep2(500, 1000, 2000) -- Substituído de Utils:SleepTickRandom(5) para um sleep em milissegundos com mais controle
+-- Substituído de Utils:SleepTickRandom(5) para um sleep em milissegundos com mais controle
 
     -- (500ms fixos, +até 1000ms aleatórios, +até 2000ms aleatórios raros)
 
-
-    local random_y_offset = math.random(30, 35)
-    MoveYPositive(random_y_offset)
-
-    local colosseum = API.GetAllObjArray1({COLOSSEUM_ENTRANCE_ID}, 30, {12})
-
+    local colosseum = API.GetAllObjArray1({ 28525 }, 10, { 1 })
+    local entreiportal = false
     if #colosseum > 0 then
+        entreiportal = true
+    end
 
-        State.isPortalUsed = true
+    while entreiportal==false and API.Read_LoopyLoop() do
+        colosseum = API.GetAllObjArray1({ 28525 }, 10, { 1 })
+        zukPreparation:HandleDeathNPC()
+
+        if #colosseum > 0 then
+            entreiportal = true
+        end
+
+        API.DoAction_Object1(0x39, API.OFF_ACT_GeneralObject_route0, { BOSS_PORTAL_ID }, 50)
+
+        API.RandomSleep2(1000, 1500, 2000)
 
         Logger:Info("At Colosseum entrance")
 
     end
+
 
 end
 
@@ -330,19 +318,20 @@ end
 function zukPreparation:FullPreparationCycle()
 
     Logger:Info("Iniciando ciclo de preparação completo.")
+    API.RandomSleep2(1000,500,600) -- Substituído de Utils:SleepTickRandom(2)
 
 
     if not Equipment:Contains(55484) then
-        self:ReclaimItemsAtGrave()
+        zukPreparation:HandleDeathNPC()
         if not Equipment:Contains(55484) then
             return false
         end
     end
+    if Equipment:Contains(55484) then
         self:CheckStartLocation()
         API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
         self:HandleBanking()
         API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
-    if Equipment:Contains(55484) then
         Logger:Info("to armado vamo pra cima")
     else
         return false
@@ -353,27 +342,38 @@ function zukPreparation:FullPreparationCycle()
     end
 
         self:HandlePrayerRestore()
-        API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
+        API.RandomSleep()
+        zukPreparation:FireBuff()
+        API.RandomSleep()
         self:SummonFamiliar()
         API.RandomSleep()
         self:HandleAdrenalineCrystal()
         API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
         self:GoThroughPortal()
         API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
+        while API.ReadPlayerMovin() do
+        API.RandomSleep2(500, 500, 500)
+        end
+
+    while not API.GetAllObjArrayFirst({ 28525 }, 40, { 1 }) do
+        API.RandomSleep2(500, 500, 500)
+        zukPreparation:HandleDeathNPC()
+    end
         API.DoAction_NPC(0x29, API.OFF_ACT_InteractNPC_route2, { COMBAT_INITIATOR_NPC_ID }, 50)
-        API.WaitUntilMovingEnds(10, 20) -- Espera o movimento terminar
+
+        API.RandomSleep2(2000, 2000, 1500)
 
 
 
-        if self:IsDialogInterfacePresent() then
+
+        while self:IsDialogInterfacePresent() do
+            zukPreparation:HandleDeathNPC()
 
             Logger:Info("Dialog interface is present. Clicking 'Yes' option.")
 
             local success, err = pcall(function()
 
-
                 API.DoAction_Interface(0xffffffff,0xffffffff,0,1188,8,-1,API.OFF_ACT_GeneralInterface_Choose_option)
-
             end)
 
             if not success then
@@ -384,21 +384,18 @@ function zukPreparation:FullPreparationCycle()
 
             API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
 
-        else
-
-            Logger:Debug("Dialog interface not present. Skipping 'Yes' click.")
 
         end
 
 
-
+        API.RandomSleep2(1000, 1000, 2000)
         API.RandomSleep() -- Substituído de Utils:SleepTickRandom(3)
 
         API.DoAction_Interface(0x24, 0xffffffff, 1, 1591, 60, -1, API.OFF_ACT_GeneralInterface_route)
 
         Logger:Info("Cliquei em iniciar.")
 
-        API.RandomSleep2(500, 1000, 2000) -- Mais tempo para o carregamento da luta, randomizado
+        API.RandomSleep2(1000, 1000, 2000) -- Mais tempo para o carregamento da luta, randomizado
 
         npcdeath = false
 
@@ -409,21 +406,20 @@ function zukPreparation:FullPreparationCycle()
 
 
 function zukPreparation:ReclaimItemsAtGrave()
-    API.RandomSleep2(10000, 3000, 4000) -- Substituído de Utils:SleepTickRandom(10)
-
+    API.RandomSleep2(2500,1000,1000)
     if API.DoAction_NPC(0x29,API.OFF_ACT_InteractNPC_route3,{ DEATH_NPC_ID },50) and State.isPlayerDead then
         API.RandomSleep2(1000, 1000, 1500)
         API.DoAction_NPC(0x29,API.OFF_ACT_InteractNPC_route3,{ 27299 },9)
         API.RandomSleep2(1000, 1000, 1500) -- Substituído de Utils:SleepTickRandom(5)
 
         if API.DoAction_Interface(0xffffffff,0xffffffff,1,1626,47,-1,API.OFF_ACT_GeneralInterface_route) then
-            API.RandomSleep2(1000, 1000, 1500)
+            API.RandomSleep2(2000, 1000, 1500)
         end
 
 
         if API.DoAction_Interface(0xffffffff,0xffffffff,0,1626,72,-1,API.OFF_ACT_GeneralInterface_Choose_option) then
 
-            API.RandomSleep2(500, 1000, 1500) -- Substituído de Utils:SleepTickRandom(5)
+            API.RandomSleep2(1500, 1000, 1500) -- Substituído de Utils:SleepTickRandom(5)
 
             Logger:Info("Items reclaimed from grave")
 
@@ -439,7 +435,7 @@ end
 
 function zukPreparation:CheckPlayerDeath()
     zukPreparation:VerificarNpcDeath()
-    if API.GetHP_() <= 0 and not State.isPlayerDead or npcdeath == true and not State.isPlayerDead then
+    if API.HasDeathItemsReclaim() and not State.isPlayerDead or npcdeath == true and not State.isPlayerDead then
         State.isPlayerDead = true
         zukPreparation.totalDeaths = zukPreparation.totalDeaths + 1
         Logger:Warn("Player died!")
@@ -450,25 +446,9 @@ function zukPreparation:CheckPlayerDeath()
     end
 end
 
-function zukPreparation:checkAndActiveAura()
-    if getBuff(26098) then
-        API.DoAction_Interface(0xffffffff,0xffffffff,1,1464,15,14,API.OFF_ACT_GeneralInterface_route)
-        API.RandomSleep2(1000, 500, 200)
-        API.DoAction_Interface(0xffffffff,0x5716,1,1929,95,23,API.OFF_ACT_GeneralInterface_route)
-        API.RandomSleep2(1000, 500, 200)
-        API.DoAction_Interface(0xffffffff,0x7c68,1,1929,24,-1,API.OFF_ACT_GeneralInterface_route)
-        API.RandomSleep()
-        API.DoAction_Interface(0xffffffff,0xffffffff,0,1188,8,-1,API.OFF_ACT_GeneralInterface_Choose_option)
-        API.RandomSleep2(1000, 500, 200)
-        API.DoAction_Interface(0x24,0xffffffff,1,1929,16,-1,API.OFF_ACT_GeneralInterface_route)
-        API.RandomSleep2(1000, 500, 200)
-        API.DoAction_Interface(0x24,0xffffffff,1,1929,167,-1,API.OFF_ACT_GeneralInterface_route)
-    end
-end
-npcdeath = false
 function zukPreparation:VerificarNpcDeath()
 
-    if API.DoAction_NPC(0x29,API.OFF_ACT_InteractNPC_route3,{ DEATH_NPC_ID },50) then
+    if API.IsInDeathOffice() then
         npcdeath = true
     else
         npcdeath = false
@@ -476,6 +456,7 @@ function zukPreparation:VerificarNpcDeath()
 end
 
 function zukPreparation:HandleDeathNPC()
+    zukPreparation:CheckPlayerDeath()
     if State.isPlayerDead then
         zukPreparation:ReclaimItemsAtGrave()  -- Chama a função de resgate de itens que já deve estar aqui
             API.RandomSleep2(1000, 500, 200) -- Pequeno sleep após a ação
@@ -497,6 +478,14 @@ function zukPreparation:HandleDeathNPC()
             return false
         end
 
+end
+
+function zukPreparation:FireBuff()
+    while not getBuff(10931).found do
+        Interact:Object("Campfire","Warm hands",15)
+        API.RandomSleep2(5000,500,400)
+        print("tentei por fogo na bomba")
+    end
 end
 
 return zukPreparation
