@@ -705,9 +705,13 @@ function main:useAbility(abilityName)
       end
       API.RandomSleep2(5, 0, 0)
     end
-    if not successful and habilitcast < 3 then
+    if not successful and habilitcast < 2 then
       API.logDebug("Failed to cast ability " .. abilityName .. ", recasting")
+      habilitcast = habilitcast + 1
       return main:useAbility(abilityName)
+    end
+    if habilitcast >= 2 then
+      return true
     end
     local now = os.clock()
     local tickCasted = API.Get_tick()
@@ -722,7 +726,6 @@ function main:useAbility(abilityName)
     return true
   end
   API.logWarn(string.format("[CASTING] Failed to use ability (%s)", abilityName))
-  habilitcast = habilitcast + 1
   return false
 end
 
@@ -1277,24 +1280,24 @@ local function zukFightRotation()
 
   if main:useAbility("Living Death") then return end
 
-  if not targetBloated() and onCooldown("Living Death") then
+  if not targetBloated()  then
     if main:useAbility("Bloat") then return end
   end
 
-  if necrosisStacks() >= 6 and onCooldown("Living Death") then
+  if necrosisStacks() >= 6  then
     if main:useAbility("Finger of Death") then return end
   end
 
-  if soulStacks() >= 3 and onCooldown("Living Death") then
+  if soulStacks() >= 3  then
     if main:useAbility("Volley of Souls") then return end
   end
 
-  if not specAttackOnCooldown() and onCooldown("Living Death")
+  if not specAttackOnCooldown()
           and necrosisStacks() >= 1 and necrosisStacks() <= 5 then
     if main:useAbility("Weapon Special Attack") then return end
   end
 
-  if not specAttackOnCooldown2() and onCooldown("Living Death")
+  if not specAttackOnCooldown2()
           and necrosisStacks() >= 1 and necrosisStacks() <= 5 then
     if main:useAbility("Essence of Finality") then return end
   end
@@ -1745,25 +1748,23 @@ end
 local NPC_ALVO_ID = 28536 -- Exemplo de ID do NPC
 local DISTANCIA_PERIGO = 2 -- Distância para considerar o NPC perigoso
 
+
 -- CÓDIGO PARA COLOCAR NO INÍCIO DO SCRIPT (executa uma vez)
 
--- 1. Define a base de tempo e a variação aleatória
-local baseHours = 15
-local randomMinutes = math.random(-50, 50) -- Sorteia um valor entre -50 e +50 minutos
+-- Define a duração em segundos (15 horas)
+local shutdownDurationInSeconds = 15 * 60 * 60 -- 15 horas * 60 minutos * 60 segundos
 
--- 2. Calcula a duração final em segundos, já incluindo a parte aleatória
-local shutdownDurationInSeconds = (baseHours * 3600) + (randomMinutes * 60)
-
--- 3. Guarda o momento exato em que o script começou
+-- Guarda o momento exato em que o script começou
 local scriptStartTime = os.time()
 
--- (Opcional, mas recomendado) Log para você saber qual foi o tempo sorteado
-API.logWarn(string.format("Desligamento automático agendado para aproximadamente %d horas e %d minutos.", baseHours, randomMinutes))
-
+---
+-- @description Verifica se o tempo de execução excedeu o limite.
+-- Esta é a forma recomendada e mais eficiente.
+---
 local function checkShutdownTimer_Efficient()
   -- Compara o tempo atual com o tempo inicial
   if (os.time() - scriptStartTime) >= shutdownDurationInSeconds then
-    API.logWarn("TEMPO LIMITE ATINGIDO. Desligando o script de forma segura.")
+    Logger:Warn("TEMPO LIMITE ATINGIDO. Desligando o script de forma eficiente.")
     API.Write_LoopyLoop(false)
   end
 end
@@ -1780,31 +1781,20 @@ local prayerFlicker = PrayerFlicker.new(PRAYER_CONFIG)
 API.SetMaxIdleTime(9)
 
 tracking(killCount, API.ScriptRuntimeString(), playerDeaths)
-
-zukPreparation:FullPreparationCycle() --- Para primeira kill comenta essa linha  / For first kill comment this line
 SAFESPOT_JAD = nil
-
-
+zukPreparation:FullPreparationCycle() --- Para primeira kill comenta essa linha  / For first kill comment this line
 updateFightState()
-
 -- Update buffs and overheads
 manageBuffs()
 prayerFlicker:update()
 checkCoord()
-if zukPreparation:CheckPlayerDeath() then
-  playerDeaths = playerDeaths +1
-end
-while not IsPlayerAtWPoint(SAFESPOT_JAD,0) and tentativas<6 and wave~=18  do
-  goToSafespot(SAFESPOT_JAD)
-  API.WaitUntilMovingEnds(1, 3)
-  tentativas = tentativas + 1
-  API.logWarn("[SEAR] Moving to safe point")
-  API.logWarn("Valor atual da variável tentativas: " .. tentativas, "info")
-  zukPreparation:CheckPlayerDeath()
-end
+goToSafespot(SAFESPOT_JAD)
+checkSafeSpot(SAFESPOT_JAD)
 updateFightState()
 
 while API.Read_LoopyLoop() do
+
+  checkCoord()
   checkShutdownTimer_Efficient()
 
 
@@ -1815,8 +1805,8 @@ while API.Read_LoopyLoop() do
       killCount = killCount + 1 -- Incrementa a contagem de kills
       zukDead = true -- Define como morto
       if zukDead == true and Equipment:Contains(55484) then
-        zukPreparation:FullPreparationCycle()
         SAFESPOT_JAD = nil
+        zukPreparation:FullPreparationCycle()
         zukDead = false
         tracking(killCount, API.ScriptRuntimeString(), playerDeaths)
       end
@@ -1832,6 +1822,7 @@ while API.Read_LoopyLoop() do
       API.WaitUntilMovingEnds(2, 3)
       API.logWarn("[SEAR] Moving to safe point")
       API.logWarn("Valor atual da variável tentativas: " .. tentativas, "info")
+      checkSafeSpot(SAFESPOT_JAD)
       while not IsPlayerAtWPoint(SAFESPOT_JAD,0) and tentativas<6 and wave~=18  do
         goToSafespot(SAFESPOT_JAD)
         API.WaitUntilMovingEnds(1, 3)
@@ -1932,6 +1923,7 @@ while API.Read_LoopyLoop() do
   prayerFlicker:update()
   attackZukIfPresent()
   if not Inventory:Contains(42267) then
+    SAFESPOT_JAD = nil
     zukPreparation:FullPreparationCycle()
     API.logWarn("To sem comida, vou economizar indo base")
   end
