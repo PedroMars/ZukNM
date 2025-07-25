@@ -1221,6 +1221,9 @@ local function challenge3Rotation()
 end
 
 local function zukDpsCheckRotation()
+
+
+
   if main:useAbility("Conjure Undead Army") then return end
 
   if Inventory:Contains(RING_SWITCH) then
@@ -1441,6 +1444,8 @@ local function doRotation()
       return buildAdrenRotation()
     elseif extraActionButtonVisible() and  adren >= (HAS_ZUK_CAPE and 30 or 100) then
       if doExtraActionButton() then
+        local zukdps = API.GetAllObjArrayFirst({ ZUK_IDS.DPS }, 50, { 1 })
+        attackTarget(zukdps)
         API.RandomSleep2(500, 200, 100)
         main:useAbility("Split Soul")
       end
@@ -1836,12 +1841,14 @@ tracking(killCount, API.ScriptRuntimeString(), playerDeaths)
 SAFESPOT_JAD = nil
 zukPreparation:FullPreparationCycle() --- Para primeira kill comenta essa linha  / For first kill comment this line
 updateFightState()
--- Update buffs and overheads
-manageBuffs()
-prayerFlicker:update()
 checkCoord()
 goToSafespot(SAFESPOT_JAD)
 checkSafeSpot(SAFESPOT_JAD)
+-- Update buffs and overheads
+prayerFlicker:update()
+manageBuffs()
+
+
 updateFightState()
 
 while API.Read_LoopyLoop() do

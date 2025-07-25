@@ -3824,7 +3824,6 @@ function Slib:CheckIncenseStick(BuffID)
         return false
     end
 
-    self:Info("[CheckIncenseStick] Checking incense stick buff: " .. BuffID)
     
     -- Get all active buffs
     local buffs = API.Buffbar_GetAllIDs()
@@ -3838,8 +3837,7 @@ function Slib:CheckIncenseStick(BuffID)
     for _, object in ipairs(buffs) do
         if object.id == BuffID then
             found = true
-            self:Info("[CheckIncenseStick] Found active incense stick buff")
-            
+
             -- Parse buff information
             local time, level = string.match(object.text, "(%d+)%a* %((%d+)%)")
             time = tonumber(time)
@@ -3867,13 +3865,9 @@ function Slib:CheckIncenseStick(BuffID)
                     interactions = 5
                 elseif time < 20 then
                     interactions = 4
-                elseif time < 30 then
-                    interactions = 3
-                elseif time < 40 then
-                    interactions = 2
-                else -- time < 50
-                    interactions = 1
+
                 end
+
                 
                 self:Info("[CheckIncenseStick] Buff duration low (" .. time .. "m), extending " .. interactions .. " times...")
                 for i = 1, interactions do
