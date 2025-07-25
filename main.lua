@@ -3,6 +3,7 @@ local TIMER = require("zukME-main/timer")
 local PrayerFlicker = require("zukME-main.prayer_flicker")
 local Setup = require("zukME-main.setup")
 local zukPreparation = require("zukME-main.ZukPreparation")
+local Slib = require("zukME-main.slib")
 
 
 local main = {}
@@ -17,6 +18,7 @@ USE_POISON = Setup.USE_POISON
 USE_EXCAL = Setup.USE_EXCAL
 USE_ELVEN_SHARD = Setup.USE_ELVEN_SHARD
 OVERLOAD_NAME = type(Setup.OVERLOAD_NAME) == "string" and Setup.OVERLOAD_NAME or ""
+OVERLOAD_NAME2 = type(Setup.OVERLOAD_NAME2) == "string" and Setup.OVERLOAD_NAME2 or ""
 OVERLOAD_BUFF_ID = Setup.OVERLOAD_BUFF_ID
 NECRO_PRAYER_NAME = type(Setup.NECRO_PRAYER_NAME) == "string" and Setup.NECRO_PRAYER_NAME or ""
 NECRO_PRAYER_BUFF_ID = Setup.NECRO_PRAYER_BUFF_ID
@@ -30,6 +32,8 @@ RING_SWITCH = type(Setup.RING_SWITCH) == "string" and Setup.RING_SWITCH or ""
 tentativas = 0
 HardMode = true
 HpmaxInicial = 8500
+venenostick = true
+pocaostick = true
 ---------------------------------------------------------------------
 --# END
 ---------------------------------------------------------------------
@@ -262,7 +266,7 @@ function vidaZUk()
   end
 end
 
-function IsPlayerAtWPoint(target_wpoint, tolerance)
+local function IsPlayerAtWPoint(target_wpoint, tolerance)
   -- Obtém a coordenada atual do jogador
   local player_coord = API.PlayerCoord()
 
@@ -703,11 +707,12 @@ function main:useAbility(abilityName)
         successful = true
         break
       end
-      API.RandomSleep2(5, 0, 0)
+      API.RandomSleep2(100, 80, 50)
     end
-    if not successful and habilitcast < 2 then
+    if not successful and habilitcast <= 2 then
       API.logDebug("Failed to cast ability " .. abilityName .. ", recasting")
       habilitcast = habilitcast + 1
+      API.RandomSleep2(500,400,200)
       return main:useAbility(abilityName)
     end
     if habilitcast >= 2 then
@@ -738,12 +743,35 @@ local function manageBuffs()
   local hp = API.GetHP_()
   local hppet = Familiars:GetHealth()
   local overload = getBuff(OVERLOAD_BUFF_ID)
+  local overload2 = getBuff(33210)
   local necroPrayer = getBuff(NECRO_PRAYER_BUFF_ID)
   local necroPrayer2 = getBuff(30771)
   local book = USE_BOOK and getBuff(BOOK_BUFF_ID) or nil
   local poison = getBuff(30095)
   local darkness = getBuff(30122)
   local boneShield = API.GetABs_name("Greater Bone Shield", true)
+
+  if venenostick == true or venenostick == "true" then
+    if venenostick then
+      if not Inventory:Contains(47709) then  --adicionar iddoincense
+        Slib:Warn("No guam incense sticks found in inventory.")
+        venenostick = false
+      else
+        Slib:CheckIncenseStick(47709)--adicionar iddoincense
+      end
+    end
+  end
+
+  if pocaostick == true or pocaostick == "true" then
+    if pocaostick then
+      if not Inventory:Contains(47713) then
+        Slib:Warn("No lantadyme incense sticks found in inventory.")
+        pocaostick = false
+      else
+        Slib:CheckIncenseStick(47713)
+      end
+    end
+  end
 
 
   if hppet < math.random(10000, 13000) and hppet>1500 then
@@ -801,8 +829,15 @@ local function manageBuffs()
     end
   end
 
-  if not overload.found or (overload.found and overload.remaining > 1 and overload.remaining < math.random(30)) then
+  if not overload.found   or (overload.found and overload.remaining > 1 and overload.remaining < math.random(30)) then
     if API.DoAction_Inventory3(OVERLOAD_NAME, 0, 1, API.OFF_ACT_GeneralInterface_route) then
+      API.RandomSleep2(300, 200, 200)
+    end
+
+  end
+
+  if not (overload2.found)  or (overload2.found and overload2.remaining > 1 and overload2.remaining < math.random(30)) then
+    if API.DoAction_Inventory3(OVERLOAD_NAME2, 0, 1, API.OFF_ACT_GeneralInterface_route) then
       API.RandomSleep2(300, 200, 200)
     end
   end
@@ -1372,7 +1407,7 @@ end
 local function doRotation()
   if not TIMER:shouldRun(TIMERS.GCD.name) then return end
   local adren = API.GetAdrenalineFromInterface()
-
+  API.RandomSleep2(300, 200, 200)
   if inThreadsRotation() then
     return threadsRotation()
   elseif FIGHT_STATE.wave == 18 then
@@ -1660,7 +1695,7 @@ end
 local function checkCoord()
   if SAFESPOT_JAD == nil then
     findArenaCoords()
-    while naoPegou and wave~=18 and tentativas<6  do
+    while naoPegou and tentativas<6  do
       findArenaCoords()
       API.RandomSleep2(100, 100, 50)
       tentativas = tentativas + 1
@@ -1679,19 +1714,25 @@ local function onWaveChange(newWave)
   end
 end
 
+
+local prayerFlicker = PrayerFlicker.new(PRAYER_CONFIG)
 --FIGHT_STATE.isNormalWave or
 local function checkSafeSpot (safespot)
-  if  FIGHT_STATE.isJadWave  and safespot ~= nil then
+  if safespot ~= nil then
+    local tentativas = 0
     goToSafespot(safespot)
     API.WaitUntilMovingEnds(2, 3)
     API.logWarn("[SEAR] Moving to safe point")
     API.logWarn("Valor atual da variável tentativas: " .. tentativas, "info")
     while not IsPlayerAtWPoint(safespot,0) and tentativas<6 and wave~=18  do
       goToSafespot(safespot)
+      prayerFlicker:update()
       API.WaitUntilMovingEnds(1, 3)
       tentativas = tentativas + 1
+      prayerFlicker:update()
       API.logWarn("[SEAR] Moving to safe point")
       API.logWarn("Valor atual da variável tentativas: " .. tentativas, "info")
+      prayerFlicker:update()
       zukPreparation:CheckPlayerDeath()
     end
     API.logWarn("[SEAR] To seguro mamae")
@@ -1703,20 +1744,31 @@ local function updateFightState()
   local currWave = getCurrentWave()
   zukPreparation:CheckPlayerDeath()
   if FIGHT_STATE.wave ~= currWave then
+    zukPreparation:CheckPlayerDeath()
     onWaveChange(currWave)
     API.logWarn("Estamos na wave " .. currWave)
+    zukPreparation:CheckPlayerDeath()
 
   end
-  zukPreparation:CheckPlayerDeath()
+
   FIGHT_STATE.wave = currWave
+
   FIGHT_STATE.target = API.ReadLpInteracting()
+
   FIGHT_STATE.targetInfo = API.ReadTargetInfo(false)
+
   FIGHT_STATE.isNormalWave = REGULAR_WAVES[currWave] or false
+
   FIGHT_STATE.isIgneousWave = IGNEOUS_WAVES[currWave] or false
+
   FIGHT_STATE.isJadWave = JAD_WAVES[currWave] or false
+
   FIGHT_STATE.isChallengeWave = CHALLENGE_WAVES[currWave] or false
+
   FIGHT_STATE.zukDpsCheckActive = getZukDpsCheckActive()
+
   FIGHT_STATE.isPizzaPhase = isPizzaPhaseActive()
+
 end
 
 
@@ -1777,7 +1829,7 @@ tracking(killCount, API.ScriptRuntimeString(), playerDeaths)
 -- Main loop and initialization
 API.Write_fake_mouse_do(false)
 API.SetDrawLogs(true)
-local prayerFlicker = PrayerFlicker.new(PRAYER_CONFIG)
+
 API.SetMaxIdleTime(9)
 
 tracking(killCount, API.ScriptRuntimeString(), playerDeaths)
@@ -1930,5 +1982,5 @@ while API.Read_LoopyLoop() do
 
 
   ::continue::
-  API.RandomSleep2(30, 10, 0)
+  API.RandomSleep2(30, 50, 0)
 end

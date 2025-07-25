@@ -7,7 +7,7 @@ local Setup                = {}
 --------------------------------------------------------------------------------------------------------------------------------
 Setup.HAS_ZUK_CAPE         = true               -- Whether you are using the Zuk Necro cape or not
 Setup.RING_SWITCH          = "Occultist's ring"  -- Name of ring to switch to for Zuk fight (exact match required)
-Setup.ADREN_POT_NAME       = "Adrenaline renewal"  -- Name of the adrenaline potion (partial match allowed)
+Setup.ADREN_POT_NAME       = "adrenaline"  -- Name of the adrenaline potion (partial match allowed)
 Setup.FOOD_NAME            = "blubber jellyfish" -- Name of the food on your action bar (partial match allowed)
 Setup.FOOD_POT_NAME        = "Guthix rest"       -- Name of the food potion on your action bar (partial match allowed)
 Setup.FOOD_NAMEHard        = "Saradomin brew" -- Name of the food on your action bar (partial match allowed)
@@ -17,6 +17,7 @@ Setup.RESTORE_NAME         = "Super restore"     -- Name of the restore potion (
 Setup.NECRO_PRAYER_NAME    = "Sorrow"            -- Name of the Necromancy prayer (exact match required)
 Setup.NECRO_PRAYER_BUFF_ID = 30769              -- Buff ID for the Necromancy prayer when active (find using API.Buffbar_GetAllIDs)
 Setup.OVERLOAD_NAME        = "Overload"    -- Name of the overload potion (partial match allowed)
+Setup.OVERLOAD_NAME2        = "overload"    -- Name of the overload potion (partial match allowed)
 Setup.OVERLOAD_BUFF_ID     = 26093               -- Buff ID for the overload potion when active (API.Buffbar_GetAllIDs)
 Setup.USE_BOOK             = true                -- Whether to use a scripture book (false ignores the book values below)
 Setup.BOOK_NAME            = "Scripture of Wen"  -- Name of the scripture book on your action bar (exact match required)

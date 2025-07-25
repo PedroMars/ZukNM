@@ -216,7 +216,7 @@ function zukPreparation:HandlePrayerRestore()
 
         API.DoAction_Object1(0x3d, API.OFF_ACT_GeneralObject_route0, { ALTAR_OF_WAR_ID }, 50)
 
-        while API.GetPrayPrecent() < 90 do
+        while API.GetPrayPrecent() < 90 and API.Read_LoopyLoop() do
             API.RandomSleep2(500, 500, 500)
         end
 
@@ -232,7 +232,7 @@ function zukPreparation:HandleBanking()
 
     API.DoAction_Object1(0x33, API.OFF_ACT_GeneralObject_route3, { BANK_CHEST_ID }, 50)
 
-    while not Inventory:Contains(15332) do
+    while not Inventory:Contains(15332) and not Inventory:Contains(33210)  and API.Read_LoopyLoop() do
         zukPreparation:HandleDeathNPC()
         API.RandomSleep2(1200, 700, 800)
     end
@@ -257,7 +257,7 @@ function zukPreparation:HandleAdrenalineCrystal()
 
             API.RandomSleep2(2000,500,500)
 
-            while API.ReadPlayerMovin() do
+            while API.ReadPlayerMovin() and API.Read_LoopyLoop() do
                 API.RandomSleep2(500, 500, 500)
             end
 
@@ -321,7 +321,7 @@ function zukPreparation:FullPreparationCycle()
     API.RandomSleep2(1000,500,600) -- Substituído de Utils:SleepTickRandom(2)
 
 
-    if not Equipment:Contains(55484) then
+    if not Equipment:Contains(55484)  then
         zukPreparation:HandleDeathNPC()
         if not Equipment:Contains(55484) then
             return false
@@ -351,11 +351,11 @@ function zukPreparation:FullPreparationCycle()
         API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
         self:GoThroughPortal()
         API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
-        while API.ReadPlayerMovin() do
+        while API.ReadPlayerMovin() and API.Read_LoopyLoop() do
         API.RandomSleep2(500, 500, 500)
         end
 
-    while not API.GetAllObjArrayFirst({ 28525 }, 40, { 1 }) do
+    while not API.GetAllObjArrayFirst({ 28525 }, 40, { 1 }) and API.Read_LoopyLoop() do
         API.RandomSleep2(500, 500, 500)
         zukPreparation:HandleDeathNPC()
     end
@@ -366,7 +366,7 @@ function zukPreparation:FullPreparationCycle()
 
 
 
-        while self:IsDialogInterfacePresent() do
+        while self:IsDialogInterfacePresent() and API.Read_LoopyLoop() do
             zukPreparation:HandleDeathNPC()
 
             Logger:Info("Dialog interface is present. Clicking 'Yes' option.")
@@ -481,7 +481,7 @@ function zukPreparation:HandleDeathNPC()
 end
 
 function zukPreparation:FireBuff()
-    while not getBuff(10931).found do
+    while not getBuff(10931).found  and API.Read_LoopyLoop() do
         Interact:Object("Campfire","Warm hands",15)
         API.RandomSleep2(5000,500,400)
         print("tentei por fogo na bomba")
