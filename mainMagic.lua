@@ -851,42 +851,27 @@ end
 --# SECTION: Combat rotations
 ---------------------------------------------------------------------
 local function buildAdrenRotationBeforeZuk()
-  if Inventory:Contains(RING_SWITCH) then
-    if Inventory:Equip(RING_SWITCH) then
-      API.RandomSleep2(400, 200, 50)
-      return
-    end
-  end
-
-  if not targetDeathMarked() and not invokeDeathActive() then
-    if main:useAbility("Invoke Death") then return end
-  end
-
-  if main:useAbility("Conjure Undead Army") then return end
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Soul Sap") then return end
-  if main:useAbility("Basic<nbsp>Attack") then return end
+  if main:useAbility("Sacrifice") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
+  if main:useAbility("Chain") then return end
+  if main:useAbility("Corruption Blast") then return end
+  if main:useAbility("Sonic Wave") then return end
 end
 
 local function buildAdrenRotation()
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Soul Sap") then return end
-  if main:useAbility("Basic<nbsp>Attack") then return end
-end
+  if main:useAbility("Sacrifice") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
+  if main:useAbility("Chain") then return end
+  if main:useAbility("Corruption Blast") then return end
+  if main:useAbility("Sonic Wave") then return end
 
-local function isTargetNearDeath(targetHitpoints)
-  return targetHitpoints <= 10000 -- Ajuste este valor conforme a sua preferência
 end
 
 local function challenge1Rotation()
-
-  if Inventory:Contains(RING_SWITCH) then
-    if Inventory:Equip(RING_SWITCH) then
-      API.RandomSleep2(400, 200, 50)
-      return
-    end
-  end
-
   if API.GetAdrenalineFromInterface() < 60 and not getDebuff(26094).found then
     if API.DoAction_Inventory3(ADREN_POT_NAME, 0, 1, API.OFF_ACT_GeneralInterface_route) then
       API.RandomSleep2(300, 200, 200)
@@ -894,80 +879,32 @@ local function challenge1Rotation()
     end
   end
 
-  if main:useAbility("Death Skulls") then return end
+  if worthSkullingOrThreading(3) then
+    if main:useAbility("Sunshine") then return end  end
 
-  if main:useAbility("Threads of Fate") then return end
-
-  if soulStacks() >= 3 then
-    if main:useAbility("Volley of Souls") then return end
-  end
-
-  if main:useAbility("Finger of Death") then return end
-  if main:useAbility("Soul Sap") then return end
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Basic Attack") then return end
+  if main:useAbility("Wild Magic") then return end
+  if main:useAbility("Chain") then return end
+  if main:useAbility("Corruption Blast") then return end
+  if main:useAbility("Sonic Wave") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Sacrifice") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
 
 end
 
 local function waveClearRotation()
   -- Ativação de Invoke Death (se não estiver ativo e o alvo tiver HP suficiente)
-  if main:useAbility("Conjure Undead Army") then return end
-
-  if main:useAbility("Reflect") then return end
-
-  if not targetDeathMarked() and not invokeDeathActive() and
-          API.ReadTargetInfo(false).Hitpoints >= 20000 then
-    if main:useAbility("Invoke Death") then return end
-  end
-
-
-  -- Threads of Fate e Death Skulls (priorização para multi-alvo e dano burst)
-  -- Priorize Threads of Fate para maior flexibilidade se worthSkullingOrThreading for verdadeiro para ele
-  if worthSkullingOrThreading(3, 4) and not deathSkullsActive() and soulStacks() >= 2 then
-    if main:useAbility("Threads of Fate") then return end
-  end
-
-  -- Volley of Souls (dano AoE e de alma)
-  if FIGHT_STATE.targetInfo.Hitpoints >= 10000 and soulStacks() >= 3 then
-    if main:useAbility("Volley of Souls") then return end  end
-
-
-  -- Death Skulls com Capa de Zuk (se Threads of Fate não for usado e for worth)
-  if worthSkullingOrThreading(2) and HAS_ZUK_CAPE and not deathSkullsActive() then
-    if main:useAbility("Death Skulls") then return end
-  end
-
-  if main:useAbility("Living Death") then return end
-
-  -- Bloat (se o alvo tiver HP suficiente e não estiver bloated)
-  if FIGHT_STATE.targetInfo.Hitpoints >= 20000 and not targetBloated() then
-    if main:useAbility("Bloat") then return end
-  end
-
-  -- Conjure Undead Army (melhoria de dano geral e AoE)
-  -- Colocado antes de outras conjurações para maximizar o tempo de atividade da armadura
-  if main:useAbility("Conjure Undead Army") then return end
-
-  -- Finger of Death (alto dano de necrose)
-  if FIGHT_STATE.targetInfo.Hitpoints >= 10000 and necrosisStacks() >= 6 then
-    if main:useAbility("Finger of Death") then return end
-  end
-
-
-  -- Ataque Especial (mais condicional)
-  -- Usar quando tiver necrose e o alvo não estiver perto da morte
-  if necrosisStacks() >= 1 and necrosisStacks() <= 5 and not specAttackOnCooldown() and
-          not isTargetNearDeath(FIGHT_STATE.targetInfo.Hitpoints) then
-    if main:useAbility("Weapon Special Attack") then return end
-  end
-
-  -- Conjurações restantes (priorização de acordo com o poder)
-  if main:useAbility("Command Vengeful Ghost") then return end
-  if main:useAbility("Command Skeleton Warrior") then return end
-  -- Habilidades básicas
-  if main:useAbility("Soul Sap") then return end
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Basic Attack") then return end
+  if worthSkullingOrThreading(3) then
+    if main:useAbility("Sunshine") then return end  end
+  if main:useAbility("Concentrated Blast") then return end
+  if main:useAbility("Sacrifice") then return end
+  if main:useAbility("Chain") then return end
+  if main:useAbility("Corruption Blast") then return end
+  if main:useAbility("Sonic Wave") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
 
 end
 
@@ -975,71 +912,38 @@ end
 local function threadsRotation()
 
 
-  if main:useAbility("Conjure Undead Army") then return end
+  if main:useAbility("Wild Magic") then return end
 
-  -- Death Skulls com Capa de Zuk (se Threads of Fate não for usado e for worth)
-  if worthSkullingOrThreading(2) and HAS_ZUK_CAPE and not deathSkullsActive() then
-    if main:useAbility("Death Skulls") then return end
-  end
+  if main:useAbility("Concentrated Blast") then return end
 
+  if main:useAbility("Essence of Finality") then return end
 
-  if worthSkullingOrThreading(2, 4) and not deathSkullsActive() and soulStacks() >= 2 then
-    if main:useAbility("Threads of Fate") then return end
-  end
-
-  if soulStacks() >= 2 then
-    if main:useAbility("Volley of Souls") then return end
-  end
-
-  if necrosisStacks() >= 1 and
-          necrosisStacks() <= 5 and not specAttackOnCooldown() then
-    if main:useAbility("Weapon Special Attack") then return end
-  end
-
-  if main:useAbility("Touch of Death") then return end
-
-  if necrosisStacks() >= 6 then
-    if main:useAbility("Finger of Death") then return end
-  end
-
-  if main:useAbility("Command Vengeful Ghost") then return end
-  if main:useAbility("Command Skeleton Warrior") then return end
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Basic<nbsp>Attack") then return end
+  if main:useAbility("Chain") then return end
+  if main:useAbility("Corruption Blast") then return end
+  if main:useAbility("Sonic Wave") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
 end
 
 local function stunRotation()
-  if main:useAbility("Conjure Undead Army") then return end
 
-  if not targetDeathMarked() and not invokeDeathActive() and
-          API.ReadTargetInfo(false).Hitpoints >= 20000 then
-    if main:useAbility("Invoke Death") then return end
-  end
+    if main:useAbility("Impact") then return end
 
-  if not targetStunnedOrBound() then
-    if main:useAbility("Soul Strike") then return end
-  end
 
-  if not specAttackOnCooldown2() and not targetStunnedOrBound() then
+  if main:useAbility("Deep Impact") then return end
+
+  if not specAttackOnCooldown2()  then
     if main:useAbility("Essence of Finality") then return end
   end
+  if main:useAbility("Concentrated Blast") then return end
 
-
-  if main:useAbility("Touch of Death") then return end
-
-
-  if not targetStunnedOrBound() then
-    if main:useAbility("Soul Sap") then return end
-  end
-
-  if not targetBloated() then
-    if main:useAbility("Bloat") then return end
-  end
-
-  if main:useAbility("Command Vengeful Ghost") then return end
-  if main:useAbility("Command Skeleton Warrior") then return end
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Basic<nbsp>Attack") then return end
+  if main:useAbility("Chain") then return end
+  if main:useAbility("Corruption Blast") then return end
+  if main:useAbility("Sonic Wave") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
 end
 
 local function attackZukIfPresent()
@@ -1058,42 +962,9 @@ end
 
 local function thresholdRotation()
 
+  if main:useAbility("Wild Magic") then return end
 
-  if main:useAbility("Conjure Undead Army") then return end
-
-  if not targetDeathMarked() and not invokeDeathActive() and
-          API.ReadTargetInfo(false).Hitpoints >= 20000 then
-    if main:useAbility("Invoke Death") then return end
-  end
-
-
-  if necrosisStacks() >= 6 then
-    if main:useAbility("Finger of Death") then return end
-  end
-
-
-  if not targetBloated() then
-    if main:useAbility("Bloat") then return end
-  end
-
-  if necrosisStacks() >= 4 and not targetBloated() then
-    if main:useAbility("Finger of Death") then return end
-  end
-
-
-  if main:useAbility("Touch of Death") then return end
-
-
-  if FIGHT_STATE.targetInfo.Hitpoints > 20000 and
-          not targetBloated() then
-    if main:useAbility("Spectral Scythe") then return end
-  end
-
-  if FIGHT_STATE.targetInfo.Hitpoints > 5000 and
-          necrosisStacks() >= 1 and necrosisStacks() <= 5 and
-          not specAttackOnCooldown() then
-    if main:useAbility("Weapon Special Attack") then return end
-  end
+  if main:useAbility("Concentrated Blast") then return end
 
   if FIGHT_STATE.targetInfo.Hitpoints > 5000 and
           necrosisStacks() >= 1 and necrosisStacks() <= 5 and
@@ -1101,16 +972,12 @@ local function thresholdRotation()
     if main:useAbility("Essence of Finality") then return end
   end
 
-  if soulStacks() >= 2 then
-    if main:useAbility("Volley of Souls") then return end
-  end
-
-  if main:useAbility("Conjure Undead Army") then return end
-  if main:useAbility("Command Vengeful Ghost") then return end
-  if main:useAbility("Command Skeleton Warrior") then return end
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Soul Sap") then return end
-  if main:useAbility("Basic<nbsp>Attack") then return end
+  if main:useAbility("Chain") then return end
+  if main:useAbility("Corruption Blast") then return end
+  if main:useAbility("Sonic Wave") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
 end
 
 local function challenge2Rotation()
@@ -1130,35 +997,23 @@ local function challenge2Rotation()
       return
     end
   end
-
-  if not targetDeathMarked() and not invokeDeathActive() then
-    if main:useAbility("Invoke Death") then return end
-  end
-
-  if main:useAbility("Death Skulls") then return end
-
-  if necrosisStacks() >= 6 then
-    if main:useAbility("Finger of Death") then return end
-  end
-
-  if soulStacks() >= 3 then
-    if main:useAbility("Volley of Souls") then return end
-  end
-
-  if not specAttackOnCooldown() then
-    if main:useAbility("Weapon Special Attack") then return end
-  end
-
-  if not specAttackOnCooldown2() then
+  if main:useAbility("Sunshine") then return end
+  if main:useAbility("Concentrated Blast") then return end
+  if main:useAbility("Wild Magic") then return end
+  if FIGHT_STATE.targetInfo.Hitpoints > 5000 and
+          necrosisStacks() >= 1 and necrosisStacks() <= 5 and
+          not specAttackOnCooldown2() then
     if main:useAbility("Essence of Finality") then return end
   end
-
-  if main:useAbility("Finger of Death") then return end
-
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Soul Sap") then return end
-  if main:useAbility("Basic<nbsp>Attack") then return end
+  if main:useAbility("Chain") then return end
+  if main:useAbility("Corruption Blast") then return end
+  if main:useAbility("Sonic Wave") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
 end
+
+
 
 local function challenge3Rotation()
   if API.GetAdrenalineFromInterface() < 100 and not getDebuff(26094).found then
@@ -1192,26 +1047,13 @@ local function challenge3Rotation()
     end
   end
 
-  -- Otherwise build adren off fatals
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Soul Sap") then return end
-  if main:useAbility("Basic<nbsp>Attack") then return end
+  if main:useAbility("Sacrifice") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
 end
 
 local function zukDpsCheckRotation()
-
-
-
-  if main:useAbility("Conjure Undead Army") then return end
-
-  if Inventory:Contains(RING_SWITCH) then
-    if Inventory:Equip(RING_SWITCH) then
-      API.RandomSleep2(500, 200, 50)
-      return
-    end
-  end
-
-
 
   if not targetVulned() and TIMER:shouldRun(TIMERS.Vuln.name) then
     if Inventory:Contains("Vulnerability bomb") then
@@ -1223,35 +1065,21 @@ local function zukDpsCheckRotation()
     end
   end
 
-  ---if main:useAbility("Death Skulls") then return end
+  if main:useAbility("Wild Magic") then return end
 
-  if main:useAbility("Death Skulls") then return end
+  if main:useAbility("Concentrated Blast") then return end
 
-  if soulStacks() >= 3 then
-    if main:useAbility("Volley of Souls") then return end
-  end
-
-  if necrosisStacks() >= 6 and not deathSkullsActive() then
-    if main:useAbility("Finger of Death") then return end
-  end
-
-  if not targetBloated() and not deathSkullsActive() then
-    if main:useAbility("Bloat") then return end
-  end
-
-  if not specAttackOnCooldown() and not deathSkullsActive() then
-    if main:useAbility("Weapon Special Attack") then return end
-  end
-
-  if not specAttackOnCooldown2()and not deathSkullsActive() then
+  if FIGHT_STATE.targetInfo.Hitpoints > 5000 and
+          necrosisStacks() >= 1 and necrosisStacks() <= 5 and
+          not specAttackOnCooldown2() then
     if main:useAbility("Essence of Finality") then return end
   end
 
-  if main:useAbility("Command Vengeful Ghost") then return end
-  if main:useAbility("Command Skeleton Warrior") then return end
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Soul Sap") then return end
-  if main:useAbility("Basic<nbsp>Attack") then return end
+  if main:useAbility("Chain") then return end
+  if main:useAbility("Sonic Wave") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
 end
 
 local function zukFightRotation()
@@ -1286,43 +1114,27 @@ local function zukFightRotation()
     end
   end
 
-  if main:useAbility("Conjure Undead Army") then return end
 
-  if not targetDeathMarked() and not invokeDeathActive() then
-    if main:useAbility("Invoke Death") then return end
+  if API.GetAdrenalineFromInterface() < 60 and not getDebuff(26094).found then
+    if API.DoAction_Inventory3(ADREN_POT_NAME, 0, 1, API.OFF_ACT_GeneralInterface_route) then
+      API.RandomSleep2(300, 200, 200)
+      return
+    end
   end
-
-  if main:useAbility("Death Skulls") then return end
-
-  if main:useAbility("Living Death") then return end
-
-  if not targetBloated()  then
-    if main:useAbility("Bloat") then return end
-  end
-
-  if necrosisStacks() >= 6  then
-    if main:useAbility("Finger of Death") then return end
-  end
-
-  if soulStacks() >= 3  then
-    if main:useAbility("Volley of Souls") then return end
-  end
-
-  if not specAttackOnCooldown()
-          and necrosisStacks() >= 1 and necrosisStacks() <= 5 then
-    if main:useAbility("Weapon Special Attack") then return end
-  end
-
-  if not specAttackOnCooldown2()
-          and necrosisStacks() >= 1 and necrosisStacks() <= 5 then
+  if main:useAbility("Sunshine") then return end
+  if main:useAbility("Concentrated Blast") then return end
+  if main:useAbility("Wild Magic") then return end
+  if FIGHT_STATE.targetInfo.Hitpoints > 5000 and
+          necrosisStacks() >= 1 and necrosisStacks() <= 5 and
+          not specAttackOnCooldown2() then
     if main:useAbility("Essence of Finality") then return end
   end
-
-  if main:useAbility("Command Vengeful Ghost") then return end
-  if main:useAbility("Command Skeleton Warrior") then return end
-  if main:useAbility("Touch of Death") then return end
-  if main:useAbility("Soul Sap") then return end
-  if main:useAbility("Basic<nbsp>Attack") then return end
+  if main:useAbility("Chain") then return end
+  if main:useAbility("Corruption Blast") then return end
+  if main:useAbility("Sonic Wave") then return end
+  if main:useAbility("Dragon Breath") then return end
+  if main:useAbility("Impact") then return end
+  if main:useAbility("Wrack") then return end
 end
 
 local function harAkenRotation()

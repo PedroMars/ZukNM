@@ -4,6 +4,7 @@ local Logger = require("zukME-main.ZukLogger")
 
 local auras = require("auras")
 
+local Slib = require("zukME-main.slib")
 
 local ALTAR_OF_WAR_ID = 114748
 
@@ -22,6 +23,9 @@ local COMBAT_START_INTERFACE_ID = 1671
 local COMBAT_INITIATOR_NPC_ID = 28525
 
 local npcdeath = false
+
+venenostick = true
+pocaostick = true
 
 
 
@@ -67,6 +71,11 @@ end
 
 local zukPreparation = {}
 
+-- Adicione esta função auxiliar no topo do seu arquivo
+local function hasTimedOut(startTime, timeoutSeconds)
+    return (os.time() - startTime) > timeoutSeconds
+end
+
 
 
 zukPreparation.summoningPouches = {
@@ -81,7 +90,7 @@ zukPreparation.foodItems = {
     "Cavefish", "Manta ray", "Rocktail", "Tiger shark", "Sailfish",
     "Potato with cheese", "Tuna potato", "Baron shark", "Juju gumbo",
     "Great maki", "Great gunkan", "Rocktail soup", "Sailfish soup",
-    "Fury shark", "Primal feast"
+    "Fury shark", "Primal feast", "Saradomin brew"
 }
 
 zukPreparation.emergencyFoodItems = {
@@ -178,6 +187,7 @@ function zukPreparation:SleepTickRandom(sleepticks)
 end
 
 function zukPreparation:WarsTeleport()
+
     API.DoAction_Ability("War's Retreat", 1, API.OFF_ACT_GeneralInterface_route, false)
     self:SleepTickRandom(10)
     Logger:Info("Teleported to War's Retreat")
@@ -229,18 +239,24 @@ end
 
 
 function zukPreparation:HandleBanking()
-
     API.DoAction_Object1(0x33, API.OFF_ACT_GeneralObject_route3, { BANK_CHEST_ID }, 50)
 
-    while not Inventory:Contains(15332) and not Inventory:Contains(33210)  and API.Read_LoopyLoop() do
-        zukPreparation:HandleDeathNPC()
+    local startTime = os.time()
+    local timeoutSeconds = 20 -- Espera no máximo 20 segundos
+
+    while not Inventory:Contains(15332) and not Inventory:Contains(33210) and not Inventory:Contains(49048) and API.Read_LoopyLoop() do
+        if hasTimedOut(startTime, timeoutSeconds) then
+            Logger:Error("Timeout no banco! Preset não carregou ou item esperado não foi encontrado.")
+            API.Write_LoopyLoop(false)
+            return false -- Retorna falha
+        end
+        self:HandleDeathNPC()
         API.RandomSleep2(1200, 700, 800)
     end
 
     Logger:Info("Loading preset")
-
     State.isBanking = true
-
+    return true -- Retorna sucesso
 end
 
 
@@ -249,30 +265,27 @@ function zukPreparation:HandleAdrenalineCrystal()
     while not State.isMaxAdrenaline and API.Read_LoopyLoop() do
         zukPreparation:HandleDeathNPC()
 
-        if API.GetAddreline_() ~= 100 then
+        if API.GetAddreline_() < 100 then
 
-            Logger:Info("Charging adrenaline...")
-
-            Interact:Object("Adrenaline crystal", "Channel", 60)
-
-            API.RandomSleep2(2000,500,500)
-
-            while API.ReadPlayerMovin() and API.Read_LoopyLoop() do
-                API.RandomSleep2(500, 500, 500)
+            API.DoAction_WalkerW(WPOINT.new(3290, 10148, 0))
+            API.RandomSleep2(300, 200, 30)
+            API.DoAction_Surge_Tile(WPOINT.new(3290, 10148, 0), 2)
+            API.RandomSleep2(50, 30, 30)
+            API.DoAction_Dive_Tile(WPOINT.new(3290, 10148, 0))
+            API.RandomSleep2(500,400,500)
+            API.DoAction_WalkerW(WPOINT.new(3290, 10148, 0))
+            API.RandomSleep2(500,400,500)
+            while API.GetAddreline_() < 100  and API.Read_LoopyLoop() do
+                Interact:Object("Adrenaline crystal","Channel",4)
+                API.RandomSleep2(1000,400,500)
             end
 
-            API.RandomSleep() -- Substituído de Utils:SleepTickRandom(1)
-
+            Logger:Info("Charging adrenaline")
         else
-
             State.isMaxAdrenaline = true
-
-            Logger:Info("Adrenaline fully charged.")
-
+            Logger:Info("Adrenaline fully charged")
         end
-
-        API.RandomSleep() -- Substituído de Utils:SleepTickRandom(1)
-
+        
     end
 
 end
@@ -315,94 +328,125 @@ local function getBuff(buffId)
     return { found = buff.found, remaining = (buff.found and API.Bbar_ConvToSeconds(buff)) or 0 }
 end
 
+
+
+
 function zukPreparation:FullPreparationCycle()
-
+    Logger:Info("==================================================")
     Logger:Info("Iniciando ciclo de preparação completo.")
-    API.RandomSleep2(1000,500,600) -- Substituído de Utils:SleepTickRandom(2)
+    API.RandomSleep2(1000, 500, 600)
 
-
-    if not Equipment:Contains(55484)  then
-        zukPreparation:HandleDeathNPC()
+    -- ETAPA 1: VERIFICAR EQUIPAMENTO
+    Logger:Info("[ETAPA 1/8] Verificando equipamento inicial...")
+    if not Equipment:Contains(55484) then
+        Logger:Warn("Arma principal (55484) não encontrada. Tentando recuperar itens...")
+        self:HandleDeathNPC()
         if not Equipment:Contains(55484) then
+            Logger:Error("Falha ao recuperar a arma após a morte. Interrompendo o ciclo.")
             return false
         end
     end
-    if Equipment:Contains(55484) then
-        self:CheckStartLocation()
-        API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
-        self:HandleBanking()
-        API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
-        Logger:Info("to armado vamo pra cima")
-    else
+    Logger:Info("Equipamento OK.")
+
+    -- ETAPA 2: LOCALIZAÇÃO E BANCO
+    Logger:Info("[ETAPA 2/8] Verificando localização e acessando o banco...")
+    self:CheckStartLocation()
+    API.RandomSleep()
+    local bankSuccess = self:HandleBanking() -- HandleBanking precisa retornar true/false
+    if not bankSuccess then
+        Logger:Error("Falha na etapa do banco. Interrompendo o ciclo.")
         return false
     end
+    Logger:Info("Banco OK. Preset carregado.")
+    API.RandomSleep()
+    Logger:Info("to armado vamo pra cima")
 
+    -- ETAPA 3: INCENSOS
+    Logger:Info("[ETAPA 3/8] Verificando e usando incensos...")
+    if venenostick then -- Simplificado
+        if not Inventory:Contains(47709) then
+            Slib:Warn("Nenhum incenso de guam encontrado.")
+            venenostick = false
+        else
+            Slib:CheckIncenseStick(47709)
+        end
+    end
+    if pocaostick then -- Simplificado
+        if not Inventory:Contains(47713) then
+            Slib:Warn("Nenhum incenso de lantadyme encontrado.")
+            pocaostick = false
+        else
+            Slib:CheckIncenseStick(47713)
+        end
+    end
+    Logger:Info("Incensos OK.")
+
+    -- ETAPA 4: AURA
+    Logger:Info("[ETAPA 4/8] Ativando aura...")
     if not auras:isAuraActive() then
         auras:activateAura("equilibrium")
     end
+    Logger:Info("Aura OK.")
 
-        self:HandlePrayerRestore()
-        API.RandomSleep()
-        zukPreparation:FireBuff()
-        API.RandomSleep()
-        self:SummonFamiliar()
-        API.RandomSleep()
-        self:HandleAdrenalineCrystal()
-        API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
-        self:GoThroughPortal()
-        API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
-        while API.ReadPlayerMovin() and API.Read_LoopyLoop() do
+    -- ETAPA 5: RESTAURAR PONTOS
+    Logger:Info("[ETAPA 5/8] Restaurando prece e familiar...")
+    self:HandlePrayerRestore()
+    API.RandomSleep()
+    self:FireBuff() -- Buff da fogueira
+    API.RandomSleep()
+    self:SummonFamiliar()
+    Logger:Info("Pontos restaurados OK.")
+
+    -- ETAPA 6: ADRENALINA
+    Logger:Info("[ETAPA 6/8] Carregando adrenalina...")
+    self:HandleAdrenalineCrystal()
+    Logger:Info("Adrenalina OK.")
+    API.RandomSleep()
+
+    -- ETAPA 7: ENTRAR NA ARENA
+    Logger:Info("[ETAPA 7/8] Entrando no portal do chefe...")
+    self:GoThroughPortal()
+    Logger:Info("Portal atravessado OK.")
+    API.RandomSleep()
+    while API.ReadPlayerMovin() and API.Read_LoopyLoop() do
         API.RandomSleep2(500, 500, 500)
-        end
+    end
 
+    -- ETAPA 8: INICIAR COMBATE
+    Logger:Info("[ETAPA 8/8] Iniciando o combate...")
+    local startTime = os.time()
     while not API.GetAllObjArrayFirst({ 28525 }, 40, { 1 }) and API.Read_LoopyLoop() do
-        API.RandomSleep2(500, 500, 500)
-        zukPreparation:HandleDeathNPC()
-    end
-        API.DoAction_NPC(0x29, API.OFF_ACT_InteractNPC_route2, { COMBAT_INITIATOR_NPC_ID }, 50)
-
-        API.RandomSleep2(2000, 2000, 1500)
-
-
-
-
-        while self:IsDialogInterfacePresent() and API.Read_LoopyLoop() do
-            zukPreparation:HandleDeathNPC()
-
-            Logger:Info("Dialog interface is present. Clicking 'Yes' option.")
-
-            local success, err = pcall(function()
-
-                API.DoAction_Interface(0xffffffff,0xffffffff,0,1188,8,-1,API.OFF_ACT_GeneralInterface_Choose_option)
-            end)
-
-            if not success then
-
-                Logger:Error("Error clicking 'Yes' option: " .. tostring(err))
-
-            end
-
-            API.RandomSleep() -- Substituído de Utils:SleepTickRandom(2)
-
-
+        if hasTimedOut(startTime, 15) then -- Timeout de 15 segundos
+            Logger:Error("Timeout: NPC de início de combate não encontrado.")
+            return false
         end
+        API.RandomSleep2(500, 500, 500)
+        self:HandleDeathNPC()
+    end
+    API.DoAction_NPC(0x29, API.OFF_ACT_InteractNPC_route2, { COMBAT_INITIATOR_NPC_ID }, 50)
+    API.RandomSleep2(2000, 2000, 1500)
 
-
-        API.RandomSleep2(1000, 1000, 2000)
-        API.RandomSleep() -- Substituído de Utils:SleepTickRandom(3)
-
-        API.DoAction_Interface(0x24, 0xffffffff, 1, 1591, 60, -1, API.OFF_ACT_GeneralInterface_route)
-
-        Logger:Info("Cliquei em iniciar.")
-
-        API.RandomSleep2(1000, 1000, 2000) -- Mais tempo para o carregamento da luta, randomizado
-
-        npcdeath = false
-
-        Logger:Info("Ciclo de preparação completo finalizado.")
-
+    startTime = os.time()
+    while self:IsDialogInterfacePresent() and API.Read_LoopyLoop() do
+        if hasTimedOut(startTime, 10) then -- Timeout de 10 segundos
+            Logger:Error("Timeout: Diálogo de confirmação travado.")
+            break -- Sai do loop para não ficar preso
+        end
+        self:HandleDeathNPC()
+        Logger:Info("Diálogo presente. Clicando em 'Sim'.")
+        API.DoAction_Interface(0xffffffff, 0xffffffff, 0, 1188, 8, -1, API.OFF_ACT_GeneralInterface_Choose_option)
+        API.RandomSleep()
     end
 
+    API.RandomSleep2(1000, 1000, 2000)
+    API.DoAction_Interface(0x24, 0xffffffff, 1, 1591, 60, -1, API.OFF_ACT_GeneralInterface_route)
+    Logger:Info("Cliquei em iniciar.")
+    API.RandomSleep2(1000, 1000, 2000)
+    npcdeath = false
+    Logger:Info("Ciclo de preparação completo finalizado com sucesso!")
+    Logger:Info("==================================================")
+    return true -- Importante retornar true no sucesso
+end
 
 
 function zukPreparation:ReclaimItemsAtGrave()
